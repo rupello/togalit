@@ -8,6 +8,7 @@ import os
 import toga
 from toga.style import Pack
 from toga.style.pack import COLUMN
+from dotenv import load_dotenv
 
 from togalit.streamlitctrl import StreamlitCtrl
 
@@ -19,8 +20,13 @@ class ContainerApp(toga.App):
         super().__init__(on_exit=self.shutdown_streamlit)
         
     def start_streamlit(self):
+        # user settings take preference...
+        load_dotenv(dotenv_path=os.path.join(self._paths.config,"settings.env"), verbose=True)
+        # baked-in defaults...
+        load_dotenv(dotenv_path=os.path.join(self._paths.app,"resources/settings.env"), verbose=True)
+
         # script to run
-        script_path:Path  = Path(os.path.join(self._paths.app, "streamlit_main.py"))
+        script_path:Path  = Path(os.path.join(self._paths.app, "st_script.py"))
         # pass the toga paths as env vars
         streamlit_env = {
             "PATH_APP": str(self._paths.app),
@@ -45,7 +51,8 @@ class ContainerApp(toga.App):
         )
         main_box.add(web_view)
 
-        self.main_window = toga.MainWindow(title=self.formal_name)
+        self.main_window = toga.MainWindow(title=self.formal_name, 
+                                           size=(1000,618), position=(200,200))
         self.main_window.content = main_box
         self.main_window.show()
 

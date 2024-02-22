@@ -3,7 +3,6 @@ import socket
 from contextlib import closing
 from threading import Thread
 import os
-import sys
 import distutils.spawn
 
 import streamlit
@@ -40,15 +39,11 @@ class StreamlitCtrl(Thread):
     _port:str = ''
     _proc:Popen = None
     _script:str = ''    
-    _env = {
-        "STREAMLIT_SERVER_ADDRESS": "127.0.0.1",
-        "STREAMLIT_SERVER_HEADLESS": "true",
-        "STREAMLIT_THEME_BASE": "dark"
-    }
+    _env = {}
 
     def __init__(self, script, env_vars={}):
         self._script = script
-        self._env = self._env | env_vars # merge extra env vars
+        self._env = env_vars # merge extra env vars
         super().__init__()
 
     def signal_shutdown(self):
@@ -64,9 +59,12 @@ class StreamlitCtrl(Thread):
         return self._port
 
     def run(self):
+        # pass through environment + extra path vars
+        st_env = os.environ.copy()
+        st_env = st_env | self._env
         self._port = find_free_port()
         cmd = find_streamlit()
-        print(f'starting {sys.executable} -m streamlit run with env: {self._env}')
+        print(f'starting {cmd}...')
         self._proc = Popen(args=[
             cmd,                                
             'run', 
@@ -75,7 +73,7 @@ class StreamlitCtrl(Thread):
             ], 
             stdout=PIPE, 
             stderr=PIPE,
-            env=self._env)
+            env=st_env)
 
         for line in self._proc.stdout:
             print(line.decode())

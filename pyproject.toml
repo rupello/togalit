@@ -24,7 +24,9 @@ test_sources = [
 requires = [
     "streamlit",
     "typing_extensions",
-    "protobuf==4.25.3"
+    "protobuf==4.25.3",
+    "setuptools",
+    "python-dotenv"
 ]
 test_requires = [
     "pytest",
