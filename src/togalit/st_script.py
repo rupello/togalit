@@ -3,7 +3,11 @@ import streamlit as st
 import time
 import os
 import logging 
+import sys
+from streamlit_autorefresh import st_autorefresh
 
+# Run the autorefresh about every 1000 milliseconds (1 seconds) and stop after one hour
+count = st_autorefresh(interval=1000, limit=3600, key="timer_autorefresh")
 
 PATH_APP=os.environ['PATH_APP']
 PATH_LOGS=os.environ['PATH_LOGS']
@@ -98,12 +102,10 @@ if st.session_state.timer_state == "running":
     if st.session_state.time_remaining > 0:
         progress_update()
         st.session_state.time_remaining -= 1
-        st.rerun()
     else:
-        st.session_state.timer_running = False
+        st.session_state.timer_state = "idle"
         st.balloons()
         sound_alert()
         reset_timer()
 elif st.session_state.timer_state == "paused":
     progress_update()
-    st.rerun()

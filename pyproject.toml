@@ -23,6 +23,7 @@ test_sources = [
 
 requires = [
     "streamlit",
+    "streamlit-autorefresh",
     "typing_extensions",
     "protobuf==4.25.3",
     "setuptools",
