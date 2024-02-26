@@ -3,7 +3,8 @@ import socket
 from contextlib import closing
 from threading import Thread
 import os
-import distutils.spawn
+import sys
+import logging
 
 import streamlit
 
@@ -13,7 +14,19 @@ def find_free_port() -> str:
         s.bind(('', 0))
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return str(s.getsockname()[1])
-    
+
+
+def findexe(root:str, try_names):
+    logging.info(f"finding {try_names} under {root}...")
+    for folder, _, files in os.walk(root):
+        for file in files:
+            full_path = os.path.join(folder, file)
+            if os.access(full_path, os.X_OK):
+                if file.lower() in try_names:
+                    return full_path
+    raise Exception(f"could not find {try_names} under {root}")
+
+
 def find_streamlit() -> str:
     """
         find the 'streamlit' executable 
@@ -21,18 +34,15 @@ def find_streamlit() -> str:
             but installed version has no 'python' cmd and 'sys.executable' 
             will re-spawn the main app
     """
-    print("finding streamlit...")
-    try_paths = [
-        distutils.spawn.find_executable("streamlit") or 'streamlit',                                        # find on path
-        os.path.join(os.path.dirname(os.path.dirname(streamlit.__file__)),'bin/streamlit')   # packaged in site-packages/bin
-    ]
-    for p in try_paths:
-        print(f"trying: {p}...")
-        if os.path.exists(p):
-            print(f"success")
-            return p
-    raise Exception(f"could not find streamlit in {try_paths}")
-
+    packaged_root = os.path.dirname(os.path.dirname(streamlit.__file__)) 
+    dev_root = os.path.dirname(sys.executable)
+    for root in [packaged_root, dev_root]:
+        try: 
+            return findexe(root,try_names=['streamlit','streamlit.exe'])
+        except Exception as ex:
+            logging.info(ex)
+    raise Exception(f"could not find streamlit exe under any root...")
+    
 
 class StreamlitCtrl(Thread):
     _started_streamlit:bool = False    
@@ -64,7 +74,7 @@ class StreamlitCtrl(Thread):
         st_env = st_env | self._env
         self._port = find_free_port()
         cmd = find_streamlit()
-        print(f'starting {cmd}...')
+        logging.info(f'starting {cmd}...')
         self._proc = Popen(args=[
             cmd,                                
             'run', 
@@ -76,6 +86,6 @@ class StreamlitCtrl(Thread):
             env=st_env)
 
         for line in self._proc.stdout:
-            print(line.decode())
+            logging.info(line.decode())
             if line.decode('utf-8').find('Streamlit') >= 0:
                 self._started_streamlit = True
