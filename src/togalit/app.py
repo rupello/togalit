@@ -1,9 +1,11 @@
 """
  Toga App Wrapper
 """
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import time
 import os
+import logging
 
 import toga
 from toga.style import Pack
@@ -40,7 +42,19 @@ class ContainerApp(toga.App):
         while not self._streamlit.started():
             time.sleep(.5)
 
+    def init_logging(self):
+        os.makedirs(self._paths.logs, exist_ok=True)
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        handler = RotatingFileHandler(os.path.join(self._paths.logs, 'container.log'), maxBytes=1024*100, backupCount=10)
+        handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logging.info(f"*** init logging ***")
+
     def startup(self):
+        self.init_logging() 
         self.start_streamlit()
 
         main_box = toga.Box(style=Pack(direction=COLUMN))
